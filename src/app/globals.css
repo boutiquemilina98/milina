@@ -1,0 +1,403 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #ffffff;
+  --fg: #0a0a0a;
+  --muted: #6b6b6b;
+  --line: #ececec;
+  --soft: #f7f7f7;
+  --accent: #0a0a0a;
+  --accent-fg: #ffffff;
+  --warm-beige: #f5f0eb;
+  --warm-cream: #faf7f4;
+  --gold: #c9a96e;
+  --gold-light: #e8d5b0;
+  --burgundy: #6b1d2a;
+  --dark-navy: #1a1a2e;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-soft: var(--soft);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --font-sans: "Inter", "Helvetica Neue", Arial, sans-serif;
+  --font-serif: "Playfair Display", "Cormorant Garamond", Georgia, serif;
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+::selection {
+  background: #0a0a0a;
+  color: #ffffff;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f7f7f7;
+}
+::-webkit-scrollbar-thumb {
+  background: #cccccc;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #999999;
+}
+
+/* Hide scrollbar in cart drawer */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+/* Custom transitions */
+.transition-smooth {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Shimmer for loading */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+.shimmer {
+  background: linear-gradient(
+    to right,
+    #f6f6f6 0%,
+    #ececec 20%,
+    #f6f6f6 40%,
+    #f6f6f6 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+}
+
+/* Marquee animation for announcement bar */
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+.marquee-track {
+  animation: marquee 30s linear infinite;
+}
+
+/* Fade in */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.fade-in {
+  animation: fadeIn 0.4s ease-out;
+}
+
+/* Fade in from right */
+@keyframes fadeInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.fade-in-right {
+  animation: fadeInRight 0.6s ease-out forwards;
+}
+
+/* Typewriter effect */
+.typewriter-container {
+  position: relative;
+  display: inline-block;
+}
+
+.typewriter-container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--bg);
+  border-left: 2px solid var(--fg);
+  width: 100%;
+  animation: typewriterCover 5s steps(20, end) infinite, blinkCursor 0.75s step-end infinite;
+}
+
+@keyframes typewriterCover {
+  0% {
+    width: 100%;
+  }
+  20%, 80% {
+    width: 0%;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+@keyframes blinkCursor {
+  from, to { border-left-color: transparent; }
+  50% { border-left-color: var(--fg); }
+}
+
+/* Slide from right */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+.slide-in-right {
+  animation: slideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+.slide-in-left {
+  animation: slideInLeft 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Focus visible */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid #0a0a0a;
+  outline-offset: 2px;
+}
+
+button:focus {
+  outline: none;
+}
+
+/* Image hover zoom */
+.zoom-container {
+  overflow: hidden;
+}
+.zoom-img {
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.zoom-container:hover .zoom-img {
+  transform: scale(1.05);
+}
+
+/* Pulse dot */
+@keyframes pulseDot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+.pulse-dot {
+  animation: pulseDot 2s infinite;
+}
+
+/* Slide up (bottom sheet) */
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+.animate-slide-up {
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* WhatsApp pulse */
+@keyframes whatsapp-pulse {
+  0%, 100% {
+    box-shadow: 0 4px 14px rgba(37, 211, 102, 0.3);
+  }
+  50% {
+    box-shadow: 0 4px 24px rgba(37, 211, 102, 0.6);
+  }
+}
+
+/* ===== NEW FIGMA DESIGN STYLES ===== */
+
+/* Hero scroll bounce */
+@keyframes scrollBounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(8px);
+  }
+}
+.animate-scroll-bounce {
+  animation: scrollBounce 2s ease-in-out infinite;
+}
+
+/* Fade in up for scroll reveal */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.fade-in-up {
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+
+/* Stagger children animations */
+.stagger-1 { animation-delay: 0.1s; }
+.stagger-2 { animation-delay: 0.2s; }
+.stagger-3 { animation-delay: 0.3s; }
+.stagger-4 { animation-delay: 0.4s; }
+
+/* Counter animation */
+@keyframes countUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-count-up {
+  animation: countUp 0.8s ease-out forwards;
+}
+
+/* Star rating glow */
+@keyframes starGlow {
+  0%, 100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.3);
+  }
+}
+
+/* FAQ accordion */
+.faq-answer {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease-out, padding 0.3s ease-out;
+}
+.faq-answer.open {
+  max-height: 300px;
+}
+
+/* Gradient text */
+.gradient-text-gold {
+  background: linear-gradient(135deg, #c9a96e, #e8d5b0, #c9a96e);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Subtle border glow on brand section */
+.brand-border-glow {
+  border: 1px solid rgba(201, 169, 110, 0.3);
+  box-shadow: inset 0 0 30px rgba(201, 169, 110, 0.05);
+}
+
+/* Newsletter input focus */
+.newsletter-input:focus {
+  outline: none;
+  border-color: #0a0a0a;
+}
+
+/* Product card badge styles */
+.badge-bestseller {
+  background: #6b1d2a;
+  color: #ffffff;
+}
+.badge-nouveau {
+  background: #c9a96e;
+  color: #ffffff;
+}
+.badge-limited {
+  background: #1a1a2e;
+  color: #ffffff;
+}
+
+/* Testimonial card */
+.testimonial-card {
+  position: relative;
+  overflow: hidden;
+}
+.testimonial-card::before {
+  content: '"';
+  position: absolute;
+  top: -10px;
+  left: 10px;
+  font-size: 80px;
+  font-family: "Playfair Display", Georgia, serif;
+  color: rgba(201, 169, 110, 0.15);
+  line-height: 1;
+}
+
+/* Divider with ornament */
+.ornament-divider {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.ornament-divider::before,
+.ornament-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(0,0,0,0.15), transparent);
+}
