@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { products } from "@/db/schema";
 import { adminListProducts } from "@/lib/data";
 import { eq } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -75,6 +75,7 @@ export async function POST(req: NextRequest) {
       .returning();
 
     try {
+      revalidateTag("products", { expire: 0 });
       revalidatePath("/");
     } catch {}
 

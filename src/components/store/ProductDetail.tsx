@@ -113,6 +113,13 @@ export function ProductDetail({ product, categoryName }: Props) {
           <div className="relative flex flex-col items-center justify-center w-full max-w-full overflow-hidden rounded-2xl bg-neutral-50 border border-black/5">
             {(() => {
               const currentUrl = product.images[active]?.url ?? "";
+              if (!currentUrl) {
+                return (
+                  <div className="flex aspect-[3/4] w-full items-center justify-center text-5xl font-serif text-neutral-300">
+                    M
+                  </div>
+                );
+              }
               const isVideo = /\.(mp4|webm|mov|ogg)(\?|$)/i.test(currentUrl) || currentUrl.includes("video");
               if (isVideo) {
                 return (
@@ -136,6 +143,7 @@ export function ProductDetail({ product, categoryName }: Props) {
                   width={800}
                   height={800}
                   priority
+                  unoptimized
                   className="w-full h-auto max-h-[80vh] object-contain max-w-full"
                 />
               );
@@ -196,6 +204,7 @@ export function ProductDetail({ product, categoryName }: Props) {
                           alt={`${product.name} ${img.color}`}
                           width={100}
                           height={100}
+                          unoptimized
                           className="h-full w-full object-contain"
                         />
                       )}

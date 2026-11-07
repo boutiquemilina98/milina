@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { db } from "@/db";
 import { products } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 export const dynamic = "force-dynamic";
 
@@ -52,6 +52,7 @@ export async function PUT(
     }
 
     try {
+      revalidateTag("products", { expire: 0 });
       revalidatePath("/");
     } catch {}
 
@@ -76,6 +77,7 @@ export async function DELETE(
     }
 
     try {
+      revalidateTag("products", { expire: 0 });
       revalidatePath("/");
     } catch {}
 
