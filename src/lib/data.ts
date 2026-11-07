@@ -11,6 +11,7 @@ import { eq, desc, sql } from "drizzle-orm";
 import type {
   CategoryDTO,
   ProductDTO,
+  ProductImage,
   OrderDTO,
   CustomerReviewDTO,
 } from "./types";
@@ -323,19 +324,28 @@ function toProductDTO(
   categorySlug?: string | null
 ): ProductDTO {
   const rawImgs = Array.isArray(p.images) ? p.images : [];
-  const imgs = rawImgs.map((img: any, idx: number) => {
-    if (typeof img === "string") {
-      if (img.startsWith("data:image/")) {
-        return { url: `/api/media/product/${p.id}/${idx}` };
-      }
-      return { url: img };
+  const imgs: ProductImage[] = rawImgs.flatMap((rawImage: unknown, idx: number) => {
+    let imageData: Record<string, unknown> = {};
+    let url = "";
+
+    if (typeof rawImage === "string") {
+      url = rawImage.trim();
+    } else if (rawImage && typeof rawImage === "object" && !Array.isArray(rawImage)) {
+      imageData = rawImage as Record<string, unknown>;
+      const storedUrl = ["url", "src", "imageUrl", "path"].find(
+        (key) => typeof imageData[key] === "string" && imageData[key].trim()
+      );
+      if (storedUrl) url = (imageData[storedUrl] as string).trim();
     }
-    if (img && typeof img === "object") {
-      if (typeof img.url === "string" && img.url.startsWith("data:image/")) {
-        return { ...img, url: `/api/media/product/${p.id}/${idx}` };
-      }
-    }
-    return img;
+
+    if (!url) return [];
+    if (url.startsWith("data:image/")) url = `/api/media/product/${p.id}/${idx}`;
+
+    return [{
+      ...imageData,
+      url,
+      color: typeof imageData.color === "string" ? imageData.color : "",
+    } as ProductImage];
   });
   const vars = Array.isArray(p.variants) ? p.variants : [];
   const totalStock = vars.reduce((s, v) => s + (v.quantity || 0), 0);
