@@ -6,10 +6,22 @@ import { StoreChrome } from "@/components/store/StoreChrome";
 import { ensureSeedData } from "@/lib/data";
 import { getCachedCategories, getCachedSettings } from "@/lib/cache";
 
+const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://milina-xi.vercel.app").replace(/\/$/, "");
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: "BOUTIQUE MILINA - WORLD OF LUXURY",
   description:
     "Boutique Milina Luxury — L'univers d'une élégance intemporelle, où chaque pièce est choisie avec exigence pour révéler votre style. Élégance • Raffinement • Exclusivité",
+  openGraph: {
+    type: "website",
+    siteName: "Boutique Milina",
+    locale: "fr_FR",
+    title: "BOUTIQUE MILINA - WORLD OF LUXURY",
+    description:
+      "Boutique Milina Luxury — L'univers d'une élégance intemporelle, où chaque pièce est choisie avec exigence pour révéler votre style.",
+  },
+  twitter: { card: "summary_large_image" },
   keywords: [
     "milina luxury",
     "boutique milina",
@@ -31,7 +43,6 @@ export default async function RootLayout({
 }: {
   children: ReactNode;
 }) {
-  // Bootstrap DB schema + seed on first request
   try {
     await ensureSeedData();
   } catch {
@@ -80,7 +91,7 @@ export default async function RootLayout({
     >
       <head>
         <link
-          href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Cairo:wght@400;600;700;800;900&family=Cinzel:wght@400;600;700;800&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600;700&family=Montserrat:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500;1,600;1,700&family=Tajawal:wght@400;500;700;800&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Cairo:wght@400;600;700;800;900&family=Cinzel:wght@400;600;700;800&family=Cormorant+Garamond:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
         {typeof settings.favicon_image === "string" && settings.favicon_image && (

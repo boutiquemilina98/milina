@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCachedProductBySlug, getCachedProducts, getCachedCategories } from "@/lib/cache";
@@ -12,6 +13,44 @@ export async function generateStaticParams() {
 
 interface Props {
   params: Promise<{ slug: string }>;
+}
+
+const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://milina-xi.vercel.app").replace(/\/$/, "");
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  const product = await getCachedProductBySlug(slug).catch(() => null);
+  if (!product) return {};
+
+  const description = product.description?.trim().slice(0, 200) ||
+    `Découvrez ${product.name} chez Boutique Milina Luxury.`;
+  const imageUrl = product.images?.[0]?.url;
+  const absoluteImageUrl = imageUrl
+    ? imageUrl.startsWith("http://") || imageUrl.startsWith("https://")
+      ? imageUrl
+      : `${siteUrl}${imageUrl.startsWith("/") ? "" : "/"}${imageUrl}`
+    : undefined;
+  const pageUrl = `${siteUrl}/produit/${encodeURIComponent(product.slug)}`;
+
+  return {
+    title: `${product.name} | Boutique Milina`,
+    description,
+    alternates: { canonical: pageUrl },
+    openGraph: {
+      type: "website",
+      url: pageUrl,
+      title: product.name,
+      description,
+      siteName: "Boutique Milina",
+      ...(absoluteImageUrl ? { images: [{ url: absoluteImageUrl, alt: product.name }] } : {}),
+    },
+    twitter: {
+      card: absoluteImageUrl ? "summary_large_image" : "summary",
+      title: product.name,
+      description,
+      ...(absoluteImageUrl ? { images: [absoluteImageUrl] } : {}),
+    },
+  };
 }
 
 export default async function ProductPage({ params }: Props) {
