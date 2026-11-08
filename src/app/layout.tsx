@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { CartProvider } from "@/components/store/CartProvider";
 import { StoreChrome } from "@/components/store/StoreChrome";
@@ -104,6 +105,7 @@ export default async function RootLayout({
             {children}
           </StoreChrome>
         </CartProvider>
+        <Analytics />
       </body>
     </html>
   );
