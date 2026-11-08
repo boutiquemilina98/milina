@@ -9,6 +9,7 @@ import {
   IconUsers,
   IconDollar,
   IconArrowRight,
+  IconChart,
 } from "@/components/store/Icons";
 
 interface DashboardData {
@@ -212,7 +213,13 @@ export function AdminDashboardClient({ initialData = null }: Props) {
       </div>
 
       {/* Quick links */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-3">
+        <QuickCard
+          href="/admin/analytics"
+          icon={<IconChart size={20} />}
+          title="Vercel Analytics"
+          desc="Trafic en temps réel, visiteurs et pages"
+        />
         <QuickCard
           href="/admin/produits"
           icon={<IconBox size={20} />}

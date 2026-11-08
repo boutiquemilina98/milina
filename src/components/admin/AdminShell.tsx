@@ -17,6 +17,7 @@ import {
   IconLogout,
   IconDb,
   IconTrend,
+  IconChart,
   IconStore,
   IconChevronRight,
   IconExternal,
@@ -26,6 +27,7 @@ import {
 
 const NAV = [
   { href: "/admin", label: "Tableau de bord", icon: IconDashboard },
+  { href: "/admin/analytics", label: "Analytics (Vercel)", icon: IconChart },
   { href: "/admin/hero", label: "Bannière Hero", icon: IconImage },
   { href: "/admin/produits", label: "Produits", icon: IconBox },
   { href: "/admin/categories", label: "Catégories", icon: IconTag },
