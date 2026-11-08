@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { db } from "@/db";
 import { orders, customers } from "@/db/schema";
 import { adminListOrders } from "@/lib/data";
+import { sendOrderNotificationEmail } from "@/lib/email";
 import { eq, sql, desc } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
@@ -104,6 +105,27 @@ export async function POST(req: NextRequest) {
           ),
         })
         .where(eq(customers.phone, customerPhone));
+    }
+
+    // Send email notification asynchronously via Resend
+    try {
+      await sendOrderNotificationEmail({
+        orderNumber: inserted.orderNumber,
+        customerName,
+        customerPhone,
+        customerEmail: customerEmail || null,
+        wilaya,
+        commune,
+        address,
+        notes: notes || null,
+        items,
+        subtotal: subtotal ?? 0,
+        shipping: shipping ?? 0,
+        total: total ?? 0,
+        paymentMethod: paymentMethod ?? "cod",
+      });
+    } catch (emailErr) {
+      console.error("[Orders API] Failed to send order email:", emailErr);
     }
 
     return Response.json({
