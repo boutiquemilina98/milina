@@ -2,6 +2,9 @@ import { Resend } from "resend";
 import { db } from "@/db";
 import { settings } from "@/db/schema";
 
+const STORE_LOGO_URL =
+  "https://jamsuwadufnsnespyhyp.supabase.co/storage/v1/object/public/media/logo.png";
+
 async function getEmailConfig() {
   let apiKey = process.env.RESEND_API_KEY;
   let notificationEmail = process.env.NOTIFICATION_EMAIL;
@@ -32,7 +35,8 @@ async function getEmailConfig() {
   }
 
   const resendInstance = new Resend(apiKey);
-  const fromEmail = process.env.RESEND_FROM_EMAIL || "Boutique Milina <onboarding@resend.dev>";
+  const fromEmail =
+    process.env.RESEND_FROM_EMAIL || "Boutique Milina <Orders@boutiquemilina.online>";
 
   return {
     resend: resendInstance,
@@ -97,9 +101,19 @@ export async function sendOrderNotificationEmail(order: OrderEmailData) {
         <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f7f7f8; margin: 0; padding: 24px; color: #111;">
           <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #eaeaea; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
             
-            <div style="background-color: #000000; color: #ffffff; padding: 24px 32px; text-align: center;">
-              <h1 style="margin: 0; font-size: 20px; letter-spacing: 3px; font-weight: 700; text-transform: uppercase;">BOUTIQUE MILINA</h1>
-              <p style="margin: 8px 0 0 0; font-size: 13px; color: #d1d1d1; letter-spacing: 1px;">Nouvelle Commande Reçue</p>
+            <!-- Luxury Header with Logo -->
+            <div style="background-color: #000000; color: #ffffff; padding: 28px 24px; text-align: center;">
+              <div style="margin-bottom: 12px;">
+                <img 
+                  src="${STORE_LOGO_URL}" 
+                  alt="Milina" 
+                  width="70" 
+                  height="70" 
+                  style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 2px solid #dfba73; display: inline-block; background-color: #ffffff;" 
+                />
+              </div>
+              <h1 style="margin: 0; font-size: 22px; letter-spacing: 3px; font-weight: 800; text-transform: uppercase; color: #ffffff;">BOUTIQUE MILINA</h1>
+              <p style="margin: 6px 0 0 0; font-size: 12px; color: #dfba73; letter-spacing: 2px; text-transform: uppercase; font-weight: 600;">Nouvelle Commande Reçue</p>
             </div>
 
             <div style="padding: 32px;">
@@ -183,13 +197,24 @@ export async function sendOrderNotificationEmail(order: OrderEmailData) {
       </html>
     `;
 
-    // Send email to store owner
-    const adminResult = await resend.emails.send({
+    // 1. Send email to store owner from Orders@boutiquemilina.online
+    let adminResult = await resend.emails.send({
       from: fromEmail,
       to: notificationEmail,
       subject: `🛍️ Nouvelle commande #${order.orderNumber} (${Number(order.total).toLocaleString("fr-DZ")} DA) - ${order.customerName}`,
       html: emailHtml,
     });
+
+    // Fallback if custom domain fails
+    if (adminResult.error && fromEmail !== "Boutique Milina <onboarding@resend.dev>") {
+      console.warn("[Resend] Primary fromEmail failed, falling back to onboarding@resend.dev:", adminResult.error);
+      adminResult = await resend.emails.send({
+        from: "Boutique Milina <onboarding@resend.dev>",
+        to: notificationEmail,
+        subject: `🛍️ Nouvelle commande #${order.orderNumber} (${Number(order.total).toLocaleString("fr-DZ")} DA) - ${order.customerName}`,
+        html: emailHtml,
+      });
+    }
 
     if (adminResult.error) {
       console.error("[Resend] Admin send error:", adminResult.error);
@@ -197,7 +222,7 @@ export async function sendOrderNotificationEmail(order: OrderEmailData) {
       console.log("[Resend] Order notification sent successfully! ID:", adminResult.data?.id);
     }
 
-    // Attempt sending confirmation to customer if an email was provided
+    // 2. Attempt sending confirmation to customer if an email was provided
     if (order.customerEmail && order.customerEmail.includes("@")) {
       try {
         await resend.emails.send({
@@ -207,7 +232,7 @@ export async function sendOrderNotificationEmail(order: OrderEmailData) {
           html: emailHtml,
         });
       } catch (custErr) {
-        console.warn("[Resend] Could not send confirmation to customer (domain verification required for external recipients):", custErr);
+        console.warn("[Resend] Could not send confirmation to customer:", custErr);
       }
     }
 
@@ -242,9 +267,19 @@ export async function sendContactMessageEmail(data: {
         <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f7f7f8; margin: 0; padding: 24px; color: #111;">
           <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #eaeaea; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
             
-            <div style="background-color: #000000; color: #ffffff; padding: 24px 32px; text-align: center;">
-              <h1 style="margin: 0; font-size: 20px; letter-spacing: 3px; font-weight: 700; text-transform: uppercase;">BOUTIQUE MILINA</h1>
-              <p style="margin: 8px 0 0 0; font-size: 13px; color: #d1d1d1; letter-spacing: 1px;">Nouveau Message de Contact</p>
+            <!-- Luxury Header with Logo -->
+            <div style="background-color: #000000; color: #ffffff; padding: 28px 24px; text-align: center;">
+              <div style="margin-bottom: 12px;">
+                <img 
+                  src="${STORE_LOGO_URL}" 
+                  alt="Milina" 
+                  width="70" 
+                  height="70" 
+                  style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 2px solid #dfba73; display: inline-block; background-color: #ffffff;" 
+                />
+              </div>
+              <h1 style="margin: 0; font-size: 22px; letter-spacing: 3px; font-weight: 800; text-transform: uppercase; color: #ffffff;">BOUTIQUE MILINA</h1>
+              <p style="margin: 6px 0 0 0; font-size: 12px; color: #dfba73; letter-spacing: 2px; text-transform: uppercase; font-weight: 600;">Nouveau Message de Contact</p>
             </div>
 
             <div style="padding: 32px;">
@@ -287,13 +322,24 @@ ${data.message}
       </html>
     `;
 
-    const res = await resend.emails.send({
+    let res = await resend.emails.send({
       from: fromEmail,
       to: notificationEmail,
       replyTo: data.email,
       subject: `📩 Nouveau message de contact : ${data.name}`,
       html: emailHtml,
     });
+
+    if (res.error && fromEmail !== "Boutique Milina <onboarding@resend.dev>") {
+      console.warn("[Resend] Primary fromEmail failed for contact, falling back to onboarding@resend.dev:", res.error);
+      res = await resend.emails.send({
+        from: "Boutique Milina <onboarding@resend.dev>",
+        to: notificationEmail,
+        replyTo: data.email,
+        subject: `📩 Nouveau message de contact : ${data.name}`,
+        html: emailHtml,
+      });
+    }
 
     if (res.error) {
       console.error("[Resend] Contact send error:", res.error);
