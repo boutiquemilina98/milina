@@ -493,6 +493,13 @@ export function StoreChrome({ children, categories, settings }: Props) {
             >
               Contact
             </Link>
+            <span>·</span>
+            <Link
+              href="/plan-du-site"
+              className="hover:text-black transition-colors"
+            >
+              Plan du site
+            </Link>
           </div>
 
           <div className="mt-8 border-t border-black/5 pt-6 text-[11px] text-neutral-400">
