@@ -35,7 +35,8 @@ export default function AdminSettingsPage() {
         }
         setSettings(normalized);
         setLoading(false);
-      });
+      })
+      .catch(() => setLoading(false));
   }, []);
 
   const save = async (e: React.FormEvent) => {

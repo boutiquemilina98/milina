@@ -6,6 +6,7 @@ import {
   customers,
   settings,
   integrations,
+  contactMessages,
 } from "@/db/schema";
 import { eq, desc, sql } from "drizzle-orm";
 import type {
@@ -602,6 +603,22 @@ export async function adminStats() {
       count: p.count,
     })),
   };
+}
+
+export async function adminListCustomers() {
+  const rows = await db.select().from(customers).orderBy(desc(customers.createdAt));
+  return rows.map((c) => ({
+    ...c,
+    createdAt: c.createdAt.toISOString(),
+  }));
+}
+
+export async function adminListMessages() {
+  const rows = await db.select().from(contactMessages).orderBy(desc(contactMessages.createdAt));
+  return rows.map((m) => ({
+    ...m,
+    createdAt: m.createdAt.toISOString(),
+  }));
 }
 
 export async function getAllSettings() {

@@ -12,15 +12,17 @@ export default function TarifsLivraisonPage() {
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    getShippingRates().then((data) => {
-      // Initialize with existing data or defaults
-      const initRates: Record<string, { home: number; desk: number }> = {};
-      WILAYAS.forEach((w) => {
-        initRates[w] = data[w] || { home: 0, desk: 0 };
-      });
-      setRates(initRates);
-      setLoading(false);
-    });
+    getShippingRates()
+      .then((data) => {
+        // Initialize with existing data or defaults
+        const initRates: Record<string, { home: number; desk: number }> = {};
+        WILAYAS.forEach((w) => {
+          initRates[w] = data[w] || { home: 0, desk: 0 };
+        });
+        setRates(initRates);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
   }, []);
 
   const handleSave = async () => {
