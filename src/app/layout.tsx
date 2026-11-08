@@ -6,7 +6,7 @@ import { StoreChrome } from "@/components/store/StoreChrome";
 import { ensureSeedData } from "@/lib/data";
 import { getCachedCategories, getCachedSettings } from "@/lib/cache";
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://milina-xi.vercel.app").replace(/\/$/, "");
+const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://boutiquemilina.online").replace(/\/$/, "");
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

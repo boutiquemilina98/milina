@@ -4,7 +4,7 @@ import { getCachedProducts, getCachedCategories } from "@/lib/cache";
 export const revalidate = 86400;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://milina.shop";
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://boutiquemilina.online";
 
   const staticRoutes: MetadataRoute.Sitemap = [
     {
