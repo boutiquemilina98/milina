@@ -8,6 +8,15 @@ import { revalidatePath, revalidateTag } from "next/cache";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
+function cleanSlug(s: string) {
+  return (s || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 export async function GET() {
   try {
     const list = await adminListProducts();
@@ -21,7 +30,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const {
-      slug,
+      slug: rawSlug,
       name,
       description,
       categoryId,
@@ -35,6 +44,8 @@ export async function POST(req: NextRequest) {
       isFeatured,
       isActive,
     } = body ?? {};
+
+    const slug = cleanSlug(rawSlug || name);
 
     if (!slug || !name || price === undefined) {
       return Response.json(

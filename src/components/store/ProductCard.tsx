@@ -1,5 +1,6 @@
 "use client";
 
+import { normalizeImages } from "@/lib/media";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { ProductDTO } from "@/lib/types";
@@ -57,10 +58,7 @@ export function ProductCard({ product, priority, index = 0 }: Props) {
   // Older product records may store media as a URL string or under a different
   // property name. Pick the first usable image and try the remaining images if
   // a stored URL is stale or no longer reachable.
-  const imageUrls = useMemo(
-    () => (Array.isArray(product.images) ? product.images.map(mediaUrl).filter(Boolean) : []),
-    [product.images]
-  );
+  const imageUrls = useMemo(() => normalizeImages(product.images), [product.images]);
   const firstImage = imageUrls.find((url) => !failedImages.includes(url)) || "";
   const isVideo = /\.(mp4|webm|mov|ogg)(\?|$)/i.test(firstImage) || firstImage.includes("video");
   const subtitle =

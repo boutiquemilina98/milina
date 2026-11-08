@@ -21,12 +21,16 @@ interface Props {
 export function ProductDetail({ product, categoryName }: Props) {
   const { addItem, toggleFavorite, isFavorite } = useCart();
   const [active, setActive] = useState(0);
-  const [size, setSize] = useState<string | undefined>(product.sizes[0]);
-  const [color, setColor] = useState<string | undefined>(product.colors[0]);
+  const [size, setSize] = useState<string | undefined>(product.sizes?.[0]);
+  const [color, setColor] = useState<string | undefined>(product.colors?.[0]);
   const fav = isFavorite(product.slug) || isFavorite(String(product.id));
 
+  const validImages = (product.images || []).filter(
+    (img) => img && typeof img.url === "string" && img.url.trim().length > 0
+  );
+
   const onSale =
-    product.comparePrice !== null && product.comparePrice > product.price;
+    product.comparePrice !== null && product.comparePrice !== undefined && product.comparePrice > product.price;
   const discount = onSale
     ? Math.round(
         ((product.comparePrice! - product.price) / product.comparePrice!) * 100
@@ -34,34 +38,34 @@ export function ProductDetail({ product, categoryName }: Props) {
     : 0;
 
   const next = () =>
-    setActive((a) => (a + 1) % Math.max(1, product.images.length));
+    setActive((a) => (a + 1) % Math.max(1, validImages.length));
   const prev = () =>
     setActive((a) =>
-      (a - 1 + product.images.length) % Math.max(1, product.images.length)
+      (a - 1 + validImages.length) % Math.max(1, validImages.length)
     );
 
   // When color changes, switch to first image of that color
   const handleColorChange = (c: string) => {
     setColor(c);
-    const idx = product.images.findIndex((img) => img.color === c);
+    const idx = validImages.findIndex((img) => img.color === c);
     if (idx >= 0) setActive(idx);
   };
 
   // When clicking a thumbnail, also update the selected color
   const handleThumbClick = (i: number) => {
     setActive(i);
-    const img = product.images[i];
+    const img = validImages[i];
     if (img?.color) setColor(img.color);
   };
 
   // Check variant stock
-  const currentVariant = product.variants?.find(
+  const currentVariant = (product.variants || []).find(
     (v) => v.color === color && v.size === size
   );
   const variantStock = currentVariant?.quantity ?? 0;
   // Stock tracking is only active if at least one variant has a quantity > 0
-  const hasStockTracking = product.variants?.some((v) => v.quantity > 0) ?? false;
-  const isOutOfStock = hasStockTracking && variantStock <= 0 && product.variants.length > 0;
+  const hasStockTracking = (product.variants || []).some((v) => v.quantity > 0);
+  const isOutOfStock = hasStockTracking && variantStock <= 0 && (product.variants || []).length > 0;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 md:px-8">
@@ -112,7 +116,7 @@ export function ProductDetail({ product, categoryName }: Props) {
         <div className="relative min-w-0">
           <div className="relative flex flex-col items-center justify-center w-full max-w-full overflow-hidden rounded-2xl bg-neutral-50 border border-black/5">
             {(() => {
-              const currentUrl = product.images[active]?.url ?? "";
+              const currentUrl = validImages[active]?.url || validImages[0]?.url || "";
               if (!currentUrl) {
                 return (
                   <div className="flex aspect-[3/4] w-full items-center justify-center text-5xl font-serif text-neutral-300">
@@ -153,7 +157,7 @@ export function ProductDetail({ product, categoryName }: Props) {
                 -{discount}% Réduction
               </span>
             )}
-            {product.images.length > 1 && (
+            {validImages.length > 1 && (
               <>
                 <button
                   type="button"
@@ -176,9 +180,9 @@ export function ProductDetail({ product, categoryName }: Props) {
           </div>
 
           {/* Thumbnails with color labels */}
-          {product.images.length > 1 && (
+          {validImages.length > 1 && (
             <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-              {product.images.map((img, i) => {
+              {validImages.map((img, i) => {
                 const isVid = /\.(mp4|webm|mov|ogg)(\?|$)/i.test(img.url) || img.url.includes("video");
                 return (
                   <button
@@ -201,7 +205,7 @@ export function ProductDetail({ product, categoryName }: Props) {
                       ) : (
                         <Image
                           src={img.url}
-                          alt={`${product.name} ${img.color}`}
+                          alt={`${product.name} ${img.color || ""}`.trim()}
                           width={100}
                           height={100}
                           unoptimized
@@ -232,13 +236,13 @@ export function ProductDetail({ product, categoryName }: Props) {
 
           <div className="mt-4 flex items-baseline gap-3">
             <span className="text-2xl font-bold">
-              {product.price.toLocaleString("fr-DZ")} {product.currency}
+              {Number(product.price || 0).toLocaleString("fr-DZ")} {product.currency || "DA"}
             </span>
-            {onSale && (
+            {onSale && product.comparePrice && (
               <>
                 <span className="text-base text-neutral-400 line-through">
-                  {product.comparePrice!.toLocaleString("fr-DZ")}{" "}
-                  {product.currency}
+                  {Number(product.comparePrice).toLocaleString("fr-DZ")}{" "}
+                  {product.currency || "DA"}
                 </span>
                 <span className="rounded-full bg-black px-2.5 py-0.5 text-xs font-semibold text-white shadow-sm">
                   -{discount}% Réduction
@@ -252,13 +256,13 @@ export function ProductDetail({ product, categoryName }: Props) {
           )}
 
           {/* Colors — clicking switches the image */}
-          {product.colors.length > 0 && (
+          {(product.colors || []).length > 0 && (
             <div className="mt-6">
               <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-neutral-600">
                 Couleur : <span>{color}</span>
               </p>
               <div className="flex flex-wrap gap-2">
-                {product.colors.map((c) => (
+                {(product.colors || []).map((c) => (
                   <button
                     key={c}
                     type="button"
@@ -277,13 +281,13 @@ export function ProductDetail({ product, categoryName }: Props) {
             </div>
           )}
 
-          {product.sizes.length > 0 && (
+          {(product.sizes || []).length > 0 && (
             <div className="mt-6">
               <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-neutral-600">
                 Taille
               </p>
               <div className="flex flex-wrap gap-2">
-                {product.sizes.map((s) => (
+                {(product.sizes || []).map((s) => (
                   <button
                     key={s}
                     type="button"

@@ -28,30 +28,35 @@ export async function GET(
       return new NextResponse(null, { status: 404 });
     }
 
-    const imgObj = row[0].images[imgIndex];
+    const imgObj: any = row[0].images[imgIndex];
     if (!imgObj) {
       return new NextResponse(null, { status: 404 });
     }
 
-    const rawUrl = typeof imgObj === "string" ? imgObj : imgObj.url;
-    if (!rawUrl || typeof rawUrl !== "string") {
+    const rawUrl: string = typeof imgObj === "string" ? imgObj.trim() : (imgObj?.url ? String(imgObj.url).trim() : "");
+    if (!rawUrl) {
       return new NextResponse(null, { status: 404 });
     }
 
-    if (!rawUrl.startsWith("data:image/")) {
-      if (rawUrl.startsWith("http://") || rawUrl.startsWith("https://")) {
-        return NextResponse.redirect(rawUrl, { status: 307 });
-      }
+    if (rawUrl.startsWith("http://") || rawUrl.startsWith("https://")) {
+      return NextResponse.redirect(rawUrl, { status: 307 });
+    }
+
+    if (rawUrl.startsWith("/") && !rawUrl.startsWith("/api/media/")) {
+      return NextResponse.redirect(new URL(rawUrl, _req.url), { status: 307 });
+    }
+
+    if (!rawUrl.startsWith("data:")) {
       return new NextResponse(null, { status: 404 });
     }
 
-    const matches = rawUrl.match(/^data:([^;]+);base64,(.+)$/);
+    const matches = rawUrl.match(/^data:([^;]+);base64,([\s\S]+)$/);
     if (!matches) {
       return new NextResponse(null, { status: 400 });
     }
 
     const mimeType = matches[1];
-    const base64Data = matches[2];
+    const base64Data = matches[2].replace(/\s+/g, "");
     const buffer = Buffer.from(base64Data, "base64");
 
     return new NextResponse(buffer, {

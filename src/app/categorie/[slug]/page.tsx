@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getCachedCategories, getCachedProducts } from "@/lib/cache";
+import { getCategories } from "@/lib/data";
 import { ProductGrid } from "@/components/store/ProductGrid";
 
 export const dynamicParams = true;
@@ -13,19 +14,37 @@ interface Props {
 }
 
 export default async function CategoryPage({ params }: Props) {
-  const { slug } = await params;
+  const { slug: rawSlug } = await params;
+  let slug = (rawSlug || "").trim();
+  try {
+    slug = decodeURIComponent(rawSlug).trim();
+  } catch {}
+  const lowerSlug = slug.toLowerCase();
+
   let categories: Awaited<ReturnType<typeof getCachedCategories>> = [];
   try {
     categories = await getCachedCategories();
-  } catch {}
-  const cat = categories.find((c) => c.slug === slug);
-  if (!cat && slug !== "tout") {
+    if (!categories || categories.length === 0) {
+      categories = await getCategories();
+    }
+  } catch {
+    categories = await getCategories().catch(() => []);
+  }
+
+  const cat = categories.find(
+    (c) =>
+      c.slug === slug ||
+      c.slug.trim().toLowerCase() === lowerSlug ||
+      c.slug.trim() === slug
+  );
+
+  if (!cat && slug !== "tout" && lowerSlug !== "tout") {
     notFound();
   }
 
   let products: Awaited<ReturnType<typeof getCachedProducts>> = [];
   try {
-    products = await getCachedProducts({ category: slug, limit: 100 });
+    products = await getCachedProducts({ category: cat?.slug ?? slug, limit: 100 });
   } catch {}
 
   return (

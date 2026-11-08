@@ -115,7 +115,7 @@ export default function NewProductPage() {
     try {
       const payload: any = {
         ...form,
-        slug: form.slug || slugify(form.name),
+        slug: slugify(form.slug || form.name),
         price: parseFloat(form.price) || 0,
         comparePrice: form.comparePrice ? parseFloat(form.comparePrice) : null,
         images: [],

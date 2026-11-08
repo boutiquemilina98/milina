@@ -323,7 +323,23 @@ function toProductDTO(
   p: typeof products.$inferSelect,
   categorySlug?: string | null
 ): ProductDTO {
-  const rawImgs = Array.isArray(p.images) ? p.images : [];
+  let rawImgs: unknown[] = [];
+  const imgField = p.images as unknown;
+  if (Array.isArray(imgField)) {
+    rawImgs = imgField;
+  } else if (typeof imgField === "string") {
+    try {
+      const parsed = JSON.parse(imgField);
+      if (Array.isArray(parsed)) rawImgs = parsed;
+      else if (parsed && typeof parsed === "object") rawImgs = [parsed];
+      else if (typeof parsed === "string") rawImgs = [parsed];
+    } catch {
+      if (imgField.trim()) rawImgs = [imgField.trim()];
+    }
+  } else if (imgField && typeof imgField === "object") {
+    rawImgs = Object.values(imgField);
+  }
+
   const imgs: ProductImage[] = rawImgs.flatMap((rawImage: unknown, idx: number) => {
     let imageData: Record<string, unknown> = {};
     let url = "";
@@ -332,19 +348,19 @@ function toProductDTO(
       url = rawImage.trim();
     } else if (rawImage && typeof rawImage === "object" && !Array.isArray(rawImage)) {
       imageData = rawImage as Record<string, unknown>;
-      const storedUrl = ["url", "src", "imageUrl", "path"].find(
-        (key) => typeof imageData[key] === "string" && imageData[key].trim()
+      const storedUrl = ["url", "src", "imageUrl", "image_url", "publicUrl", "path"].find(
+        (key) => typeof imageData[key] === "string" && (imageData[key] as string).trim()
       );
       if (storedUrl) url = (imageData[storedUrl] as string).trim();
     }
 
     if (!url) return [];
-    if (url.startsWith("data:image/")) url = `/api/media/product/${p.id}/${idx}`;
+    if (url.startsWith("data:")) url = `/api/media/product/${p.id}/${idx}`;
 
     return [{
       ...imageData,
       url,
-      color: typeof imageData.color === "string" ? imageData.color : "",
+      color: typeof imageData.color === "string" ? imageData.color.trim() : "",
     } as ProductImage];
   });
   const vars = Array.isArray(p.variants) ? p.variants : [];
@@ -352,20 +368,20 @@ function toProductDTO(
   const colors = [...new Set(imgs.map((img: any) => img.color).filter(Boolean))];
   return {
     id: p.id,
-    slug: p.slug,
+    slug: (p.slug || "").trim(),
     name: p.name,
-    description: p.description,
+    description: p.description ?? "",
     categoryId: p.categoryId,
     categorySlug,
-    price: parseFloat(p.price),
+    price: parseFloat(p.price) || 0,
     comparePrice: p.comparePrice ? parseFloat(p.comparePrice) : null,
-    currency: p.currency,
+    currency: p.currency || "DA",
     images: imgs,
-    sizes: p.sizes,
+    sizes: Array.isArray(p.sizes) ? p.sizes : [],
     variants: vars,
-    tags: p.tags,
-    isFeatured: p.isFeatured,
-    isActive: p.isActive,
+    tags: Array.isArray(p.tags) ? p.tags : [],
+    isFeatured: !!p.isFeatured,
+    isActive: p.isActive !== false,
     totalStock,
     colors,
   };
@@ -374,7 +390,7 @@ function toProductDTO(
 function toCategoryDTO(c: typeof categories.$inferSelect): CategoryDTO {
   return {
     id: c.id,
-    slug: c.slug,
+    slug: (c.slug || "").trim(),
     name: c.name,
     description: c.description,
     imageUrl: c.imageUrl,
@@ -449,15 +465,89 @@ export async function getProducts(filter?: {
 }
 
 export async function getProductBySlug(slug: string): Promise<ProductDTO | null> {
+  const raw = (slug || "").replace(/\/+$/, "").trim();
+  if (!raw) return null;
+
+  let decoded = raw;
+  try {
+    decoded = decodeURIComponent(raw).replace(/\/+$/, "").trim();
+  } catch {}
+
+  const lower = decoded.toLowerCase().replace(/\+/g, " ").trim();
+  const numId = parseInt(decoded, 10);
+  const isNumeric = !isNaN(numId) && String(numId) === decoded;
+
   const rows = await db
     .select()
     .from(products)
-    .where(eq(products.slug, slug))
+    .where(
+      isNumeric
+        ? sql`${products.slug} = ${decoded} OR LOWER(TRIM(${products.slug})) = ${lower} OR ${products.id} = ${numId}`
+        : sql`${products.slug} = ${decoded} OR LOWER(TRIM(${products.slug})) = ${lower}`
+    )
     .limit(1);
-  if (rows.length === 0) return null;
+
   const cats = await db.select().from(categories);
   const catMap = new Map(cats.map((c) => [c.id, c.slug]));
-  return toProductDTO(rows[0], catMap.get(rows[0].categoryId ?? -1) ?? null);
+
+  if (rows.length > 0) {
+    return toProductDTO(rows[0], catMap.get(rows[0].categoryId ?? -1) ?? null);
+  }
+
+  // Fallback: check legacy single-letter aliases, ID prefixes, or slugified names
+  const allRows = await db.select().from(products);
+  const legacyAliases: Record<string, number> = {
+    j: 58,
+    c: 54,
+    r: 53,
+    d: 52,
+    e: 57,
+  };
+
+  const cleanInput = lower
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  // Check if string contains an ID pattern e.g. "58-jimmy-choo", "id-58", "p-58"
+  const idPrefixMatch = lower.match(/^(?:id-|p-|product-)?(\d+)(?:-.*)?$/i);
+  const parsedIdFromPrefix = idPrefixMatch ? parseInt(idPrefixMatch[1], 10) : null;
+
+  const matched = allRows.find((p) => {
+    if (legacyAliases[lower] && p.id === legacyAliases[lower]) return true;
+    if (parsedIdFromPrefix && p.id === parsedIdFromPrefix) return true;
+
+    const pSlug = (p.slug || "").trim().toLowerCase();
+    const cleanPSlug = pSlug
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+
+    if (pSlug === lower || cleanPSlug === cleanInput) return true;
+
+    const sName = p.name
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+
+    if (sName === lower || sName === cleanInput) return true;
+
+    // Partial matches: if slug in DB is "sofia" and input is "ensemble-sofia" or vice-versa
+    if (cleanInput && cleanPSlug && (cleanInput.endsWith(`-${cleanPSlug}`) || cleanPSlug.endsWith(`-${cleanInput}`))) return true;
+    if (cleanInput && sName && (cleanInput.includes(sName) || sName.includes(cleanInput))) return true;
+
+    return false;
+  });
+
+  if (matched) {
+    return toProductDTO(matched, catMap.get(matched.categoryId ?? -1) ?? null);
+  }
+
+  return null;
 }
 
 // ============ Admin APIs ============

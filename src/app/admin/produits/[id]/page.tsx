@@ -73,12 +73,10 @@ export default function EditProductPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/admin/products")
+    fetch(`/api/admin/products/${params.id}`)
       .then((r) => r.json())
       .then((d) => {
-        const p = (d.products as ProductDTO[]).find(
-          (x) => x.id === parseInt(params.id)
-        );
+        const p = d.product;
         if (p) {
           setForm({
             slug: p.slug,
@@ -88,14 +86,40 @@ export default function EditProductPage() {
             price: String(p.price),
             comparePrice: p.comparePrice ? String(p.comparePrice) : "",
             currency: p.currency,
-            images: p.images,
-            sizes: p.sizes,
+            images: Array.isArray(p.images) ? p.images : [],
+            sizes: p.sizes ?? [],
             variants: p.variants ?? [],
-            tags: p.tags,
-            isFeatured: p.isFeatured,
-            isActive: p.isActive,
+            tags: p.tags ?? [],
+            isFeatured: !!p.isFeatured,
+            isActive: p.isActive !== false,
           });
         }
+      })
+      .catch(() => {
+        fetch("/api/admin/products")
+          .then((r) => r.json())
+          .then((d) => {
+            const p = (d.products as ProductDTO[]).find(
+              (x) => x.id === parseInt(params.id)
+            );
+            if (p) {
+              setForm({
+                slug: p.slug,
+                name: p.name,
+                description: p.description ?? "",
+                categoryId: p.categoryId,
+                price: String(p.price),
+                comparePrice: p.comparePrice ? String(p.comparePrice) : "",
+                currency: p.currency,
+                images: p.images,
+                sizes: p.sizes,
+                variants: p.variants ?? [],
+                tags: p.tags,
+                isFeatured: p.isFeatured,
+                isActive: p.isActive,
+              });
+            }
+          });
       });
     fetch("/api/admin/categories")
       .then((r) => r.json())
@@ -119,6 +143,14 @@ export default function EditProductPage() {
     setVariantQty("");
   };
 
+  const slugify = (s: string) =>
+    (s || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form) return;
@@ -127,6 +159,7 @@ export default function EditProductPage() {
     try {
       const payload: any = {
         ...form,
+        slug: slugify(form.slug || form.name),
         price: parseFloat(form.price) || 0,
         comparePrice: form.comparePrice ? parseFloat(form.comparePrice) : null,
         images: [],
