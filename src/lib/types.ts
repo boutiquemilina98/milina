@@ -26,6 +26,7 @@ export interface ProductDTO {
   tags: string[];
   isFeatured: boolean;
   isActive: boolean;
+  sortOrder: number;
   totalStock: number;
   colors: string[]; // computed: unique colors from images
 }

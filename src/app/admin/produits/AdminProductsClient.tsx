@@ -96,6 +96,7 @@ export function AdminProductsClient({ initialProducts = [] }: Props) {
             <table className="admin-table">
               <thead>
                 <tr>
+                  <th>Ordre</th>
                   <th>Produit</th>
                   <th>Prix</th>
                   <th>Stock</th>
@@ -107,6 +108,15 @@ export function AdminProductsClient({ initialProducts = [] }: Props) {
               <tbody>
                 {filtered.map((p) => (
                   <tr key={p.id}>
+                    <td>
+                      {p.sortOrder > 0 ? (
+                        <span className="inline-flex items-center justify-center rounded-full bg-black px-2.5 py-0.5 text-xs font-bold text-white shadow-sm">
+                          #{p.sortOrder}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-neutral-400">—</span>
+                      )}
+                    </td>
                     <td>
                       <div className="flex items-center gap-3">
                         {p.images && p.images[0] && (

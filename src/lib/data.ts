@@ -383,6 +383,7 @@ function toProductDTO(
     tags: Array.isArray(p.tags) ? p.tags : [],
     isFeatured: !!p.isFeatured,
     isActive: p.isActive !== false,
+    sortOrder: p.sortOrder ?? 0,
     totalStock,
     colors,
   };
@@ -438,7 +439,13 @@ export async function getProducts(filter?: {
 }): Promise<ProductDTO[]> {
   // Run two parallel queries to keep types simple
   const [allRows, cats] = await Promise.all([
-    db.select().from(products).orderBy(desc(products.createdAt)),
+    db
+      .select()
+      .from(products)
+      .orderBy(
+        sql`CASE WHEN ${products.sortOrder} > 0 THEN ${products.sortOrder} ELSE 999999 END ASC`,
+        desc(products.createdAt)
+      ),
     db.select().from(categories),
   ]);
   const catMap = new Map(cats.map((c) => [c.id, c.slug]));
@@ -553,7 +560,13 @@ export async function getProductBySlug(slug: string): Promise<ProductDTO | null>
 
 // ============ Admin APIs ============
 export async function adminListProducts(): Promise<ProductDTO[]> {
-  const rows = await db.select().from(products).orderBy(desc(products.createdAt));
+  const rows = await db
+    .select()
+    .from(products)
+    .orderBy(
+      sql`CASE WHEN ${products.sortOrder} > 0 THEN ${products.sortOrder} ELSE 999999 END ASC`,
+      desc(products.createdAt)
+    );
   const cats = await db.select().from(categories);
   const catMap = new Map(cats.map((c) => [c.id, c.slug]));
   return rows.map((p) => toProductDTO(p, catMap.get(p.categoryId ?? -1) ?? null));

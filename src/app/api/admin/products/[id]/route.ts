@@ -58,6 +58,7 @@ export async function PUT(
       "isFeatured",
       "isActive",
       "slug",
+      "sortOrder",
     ] as const;
 
     const [existing] = await db
@@ -73,6 +74,8 @@ export async function PUT(
       if (val !== undefined) {
         if (f === "price" || f === "comparePrice") {
           update[f] = val === null || val === "" ? null : String(val);
+        } else if (f === "sortOrder") {
+          update[f] = parseInt(String(val || 0), 10) || 0;
         } else if (f === "slug" && typeof val === "string") {
           update[f] = cleanSlug(val);
         } else if (f === "images" && Array.isArray(val)) {

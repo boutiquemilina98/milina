@@ -56,6 +56,7 @@ interface Form {
   tags: string[];
   isFeatured: boolean;
   isActive: boolean;
+  sortOrder: number;
 }
 
 export default function EditProductPage() {
@@ -92,6 +93,7 @@ export default function EditProductPage() {
             tags: p.tags ?? [],
             isFeatured: !!p.isFeatured,
             isActive: p.isActive !== false,
+            sortOrder: p.sortOrder ?? 0,
           });
         }
       })
@@ -117,6 +119,7 @@ export default function EditProductPage() {
                 tags: p.tags,
                 isFeatured: p.isFeatured,
                 isActive: p.isActive,
+                sortOrder: p.sortOrder ?? 0,
               });
             }
           });
@@ -162,6 +165,7 @@ export default function EditProductPage() {
         slug: slugify(form.slug || form.name),
         price: parseFloat(form.price) || 0,
         comparePrice: form.comparePrice ? parseFloat(form.comparePrice) : null,
+        sortOrder: parseInt(String(form.sortOrder || 0), 10) || 0,
         images: [],
       };
 
@@ -568,8 +572,25 @@ export default function EditProductPage() {
           </div>
 
           <div className="admin-card p-5">
-            <h2 className="mb-4 font-semibold">Visibilité</h2>
-            <div className="space-y-3">
+            <h2 className="mb-4 font-semibold">Visibilité & Ordre d'affichage</h2>
+            <div className="space-y-4">
+              <label className="block">
+                <span className="admin-label">Numéro / Ordre d'affichage (1 = Premier produit, 2 = Deuxième...)</span>
+                <input
+                  type="number"
+                  min={0}
+                  step={1}
+                  className="admin-input"
+                  placeholder="0 = par défaut (plus récent), 1, 2, 3..."
+                  value={form.sortOrder || ""}
+                  onChange={(e) =>
+                    setForm({ ...form, sortOrder: parseInt(e.target.value, 10) || 0 })
+                  }
+                />
+                <span className="mt-1 block text-xs text-neutral-500">
+                  ترتيب ظهور المنتج في الصفحة الرئيسية (1 = أول منتج يظهر، 2 = الثاني، 3 = الثالث...)
+                </span>
+              </label>
               <Toggle
                 label="Produit actif"
                 value={form.isActive}

@@ -43,6 +43,7 @@ export async function POST(req: NextRequest) {
       tags,
       isFeatured,
       isActive,
+      sortOrder,
     } = body ?? {};
 
     const slug = cleanSlug(rawSlug || name);
@@ -82,6 +83,7 @@ export async function POST(req: NextRequest) {
         tags: tags ?? [],
         isFeatured: !!isFeatured,
         isActive: isActive !== false,
+        sortOrder: parseInt(String(sortOrder || 0), 10) || 0,
       })
       .returning();
 
