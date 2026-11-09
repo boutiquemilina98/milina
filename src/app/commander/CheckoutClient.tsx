@@ -11,14 +11,25 @@ import { IconChevronRight, IconBag, IconCheck, IconArrowLeft, IconWhatsApp, Icon
 export default function CheckoutClient({
   shippingRates,
   whatsappNumber = "213660989407",
+  customOrderProductIds = [],
+  customOrderCatIds = [],
 }: {
   shippingRates: Record<string, { home: number; desk: number }>;
   whatsappNumber?: string;
+  customOrderProductIds?: number[];
+  customOrderCatIds?: number[];
 }) {
   const { items, subtotal, clear } = useCart();
   const router = useRouter();
 
-  const isDepositRequired = subtotal >= 30000;
+  const hasCustomOrderItem = items.some(
+    (it) =>
+      customOrderProductIds.includes(it.productId) ||
+      (it.categoryId && customOrderCatIds.includes(it.categoryId)) ||
+      (it.categorySlug && it.categorySlug.toLowerCase().includes("commande"))
+  );
+
+  const isDepositRequired = subtotal >= 30000 || hasCustomOrderItem;
   const [showDepositModal, setShowDepositModal] = useState(false);
   const [modalDismissed, setModalDismissed] = useState(false);
 
@@ -45,6 +56,7 @@ export default function CheckoutClient({
   const wilayaRates = shippingRates[form.wilaya] || { home: 0, desk: 0 };
   const shipping = subtotal > 0 ? (form.deliveryType === "desk" ? wilayaRates.desk : wilayaRates.home) : 0;
   const total = subtotal + shipping;
+  const depositAmount = Math.round(total * 0.5);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,6 +108,10 @@ export default function CheckoutClient({
       )
       .join("\n\n");
 
+    const reason = hasCustomOrderItem
+      ? "Article(s) de la catégorie « Sur commande »"
+      : "Commande supérieure ou égale à 30 000 DA";
+
     const lines = [
       "✨ *NOUVELLE COMMANDE - MILINA* ✨",
       orderNum ? `📌 *N° de commande :* ${orderNum}` : null,
@@ -118,8 +134,9 @@ export default function CheckoutClient({
       `• *Livraison :* ${shipping.toLocaleString("fr-DZ")} DA`,
       `• *TOTAL :* ${total.toLocaleString("fr-DZ")} DA`,
       "",
-      "⚠️ *ACOMPTE :*",
-      "• Pour toute commande supérieure à 30 000 DA, un acompte de 2 000 DA est désormais demandé afin de garantir le bon traitement des commandes.",
+      "⚠️ *ACOMPTE DEMANDÉ (50%) :*",
+      `• *Montant acompte (50%) :* ${depositAmount.toLocaleString("fr-DZ")} DA`,
+      `• *Motif :* ${reason}`,
     ].filter(Boolean);
 
     return lines.join("\n");
@@ -155,8 +172,8 @@ export default function CheckoutClient({
         body: JSON.stringify({
           ...form,
           notes: form.notes
-            ? `${form.notes} [Commande passée via WhatsApp - Acompte 2 000 DA]`
-            : "[Commande passée via WhatsApp - Acompte 2 000 DA]",
+            ? `${form.notes} [Commande WhatsApp - Acompte 50%: ${depositAmount} DA]`
+            : `[Commande WhatsApp - Acompte 50%: ${depositAmount} DA]`,
           items: items.map((i) => ({
             productId: i.productId,
             name: i.name,
@@ -255,11 +272,14 @@ export default function CheckoutClient({
             </h2>
 
             <p className="mt-4 text-sm md:text-base leading-relaxed text-neutral-700">
-              Nous vous informons que, pour toute commande supérieure à 30 000 DA, un acompte de 2 000 DA est désormais demandé afin de garantir le bon traitement des commandes. Merci de votre compréhension. Pour toute question, contactez-nous sur WhatsApp.
+              Nous vous informons que, pour toute commande supérieure à 30 000 DA ou comprenant des articles de la catégorie « Sur commande », un acompte de 50% est désormais demandé afin de garantir le bon traitement des commandes. Merci de votre compréhension. Pour toute question, contactez-nous sur WhatsApp.
             </p>
 
             <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50/80 p-3.5 text-xs font-medium text-amber-900">
-              ⚠️ Acompte obligatoire : <span className="font-bold">2 000 DA</span> pour les commandes ≥ 30 000 DA
+              ⚠️ Acompte obligatoire (50%) : <span className="font-bold">{depositAmount.toLocaleString("fr-DZ")} DA</span>
+              <span className="block mt-0.5 text-neutral-600 font-normal">
+                (Calculé sur la base de 50% du montant de votre commande)
+              </span>
             </div>
 
             <div className="mt-6 flex flex-col gap-2.5 sm:flex-row">
@@ -275,7 +295,7 @@ export default function CheckoutClient({
               </button>
 
               <a
-                href={`https://wa.me/${String(whatsappNumber).replace(/[^0-9]/g, "")}?text=${encodeURIComponent("Bonjour, j'ai une question concernant l'acompte de 2 000 DA pour ma commande supérieure à 30 000 DA.")}`}
+                href={`https://wa.me/${String(whatsappNumber).replace(/[^0-9]/g, "")}?text=${encodeURIComponent("Bonjour, j'ai une question concernant l'acompte de 50% pour ma commande.")}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center gap-2 rounded-full border border-[#25D366] bg-[#25D366]/10 px-5 py-3.5 text-sm font-semibold text-[#128C7E] transition-smooth hover:bg-[#25D366] hover:text-white"
@@ -297,7 +317,14 @@ export default function CheckoutClient({
       <h1 className="font-serif text-3xl font-bold md:text-4xl">Finaliser la commande</h1>
 
       <form
-        onSubmit={submit}
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (isDepositRequired) {
+            submitViaWhatsApp();
+          } else {
+            submit(e);
+          }
+        }}
         className="mt-8 grid gap-8 md:grid-cols-[1fr_400px]"
       >
         <div className="space-y-6">
@@ -468,10 +495,12 @@ export default function CheckoutClient({
             <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3.5 text-xs text-amber-950">
               <div className="flex items-center gap-1.5 font-bold text-amber-900">
                 <span className="inline-block h-2 w-2 rounded-full bg-amber-500 animate-pulse"></span>
-                <span>Acompte de 2 000 DA requis</span>
+                <span>Acompte de 50% requis ({depositAmount.toLocaleString("fr-DZ")} DA)</span>
               </div>
               <p className="mt-1 leading-relaxed text-amber-800">
-                Pour toute commande supérieure à 30 000 DA, un acompte de 2 000 DA est désormais demandé afin de garantir le bon traitement des commandes.
+                {hasCustomOrderItem
+                  ? "Votre panier contient des articles de la catégorie « Sur commande ». Un acompte de 50% est requis pour valider votre commande."
+                  : "Pour toute commande supérieure à 30 000 DA, un acompte de 50% est désormais demandé afin de garantir le bon traitement des commandes."}
               </p>
               <button
                 type="button"
@@ -484,25 +513,19 @@ export default function CheckoutClient({
           )}
 
           {isDepositRequired ? (
-            <div className="mt-5 space-y-2.5">
+            <div className="mt-5 space-y-2">
               <button
                 type="button"
                 onClick={submitViaWhatsApp}
                 disabled={submitting}
-                className="flex w-full items-center justify-center gap-2.5 rounded-full bg-[#25D366] px-6 py-3.5 text-sm font-semibold uppercase tracking-wider text-white shadow-sm transition-smooth hover:bg-[#20ba59] disabled:opacity-60 cursor-pointer"
+                className="flex w-full items-center justify-center gap-2.5 rounded-full bg-[#25D366] px-6 py-3.5 text-sm font-semibold uppercase tracking-wider text-white shadow-md transition-smooth hover:bg-[#20ba59] disabled:opacity-60 cursor-pointer"
               >
                 <IconWhatsApp size={18} />
                 {submitting ? "Traitement..." : "Commander via WhatsApp"}
               </button>
-
-              <button
-                type="submit"
-                disabled={submitting}
-                className="flex w-full items-center justify-center gap-2 rounded-full border border-neutral-300 bg-white px-6 py-3 text-xs font-semibold uppercase tracking-wider text-neutral-800 transition-smooth hover:bg-neutral-50 disabled:opacity-60 cursor-pointer"
-              >
-                {submitting ? "Traitement..." : "Confirmer sur le site"}
-                <IconChevronRight size={14} />
-              </button>
+              <p className="text-center text-[11px] text-neutral-500">
+                La commande s&apos;effectue uniquement via WhatsApp
+              </p>
             </div>
           ) : (
             <button

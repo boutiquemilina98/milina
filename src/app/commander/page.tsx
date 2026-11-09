@@ -1,18 +1,22 @@
 import { db } from "@/db";
-import { settings } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { settings, categories, products } from "@/db/schema";
 import CheckoutClient from "./CheckoutClient";
 import { WILAYAS } from "@/lib/format";
-
-
 
 export default async function CommanderPage() {
   let shippingRates: Record<string, { home: number; desk: number }> = {};
   let whatsappNumber = "213660989407";
+  let customOrderProductIds: number[] = [];
+  let customOrderCatIds: number[] = [];
   
   try {
-    const rows = await db.select().from(settings);
-    const shippingRow = rows.find(r => r.key === "shippingRates");
+    const [settingsRows, categoryRows, productRows] = await Promise.all([
+      db.select().from(settings),
+      db.select().from(categories),
+      db.select({ id: products.id, categoryId: products.categoryId }).from(products),
+    ]);
+
+    const shippingRow = settingsRows.find(r => r.key === "shippingRates");
     if (shippingRow && shippingRow.value) {
       shippingRates = shippingRow.value as Record<string, { home: number; desk: number }>;
     } else {
@@ -21,9 +25,19 @@ export default async function CommanderPage() {
       });
     }
 
-    const waRow = rows.find(r => r.key === "whatsapp_number");
+    const waRow = settingsRows.find(r => r.key === "whatsapp_number");
     if (waRow && waRow.value && typeof waRow.value === "string" && waRow.value.trim().length > 0) {
       whatsappNumber = waRow.value.trim();
+    }
+
+    customOrderCatIds = categoryRows
+      .filter(c => (c.slug && c.slug.toLowerCase().includes("commande")) || (c.name && c.name.toLowerCase().includes("commande")))
+      .map(c => c.id);
+
+    if (customOrderCatIds.length > 0) {
+      customOrderProductIds = productRows
+        .filter(p => p.categoryId && customOrderCatIds.includes(p.categoryId))
+        .map(p => p.id);
     }
   } catch {
     WILAYAS.forEach(w => {
@@ -31,5 +45,12 @@ export default async function CommanderPage() {
     });
   }
 
-  return <CheckoutClient shippingRates={shippingRates} whatsappNumber={whatsappNumber} />;
+  return (
+    <CheckoutClient
+      shippingRates={shippingRates}
+      whatsappNumber={whatsappNumber}
+      customOrderProductIds={customOrderProductIds}
+      customOrderCatIds={customOrderCatIds}
+    />
+  );
 }

@@ -50,6 +50,8 @@ export interface CartItem {
   size?: string;
   color?: string;
   quantity: number;
+  categoryId?: number | null;
+  categorySlug?: string | null;
 }
 
 export interface OrderDTO {
