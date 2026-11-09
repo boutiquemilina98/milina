@@ -1,20 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/components/store/CartProvider";
 import { WILAYAS } from "@/lib/format";
 import COMMUNES from "@/lib/communes.json";
-import { IconChevronRight, IconBag, IconCheck, IconArrowLeft } from "@/components/store/Icons";
+import { IconChevronRight, IconBag, IconCheck, IconArrowLeft, IconWhatsApp, IconClose } from "@/components/store/Icons";
 
 export default function CheckoutClient({
   shippingRates,
+  whatsappNumber = "213660989407",
 }: {
   shippingRates: Record<string, { home: number; desk: number }>;
+  whatsappNumber?: string;
 }) {
   const { items, subtotal, clear } = useCart();
   const router = useRouter();
+
+  const isDepositRequired = subtotal >= 30000;
+  const [showDepositModal, setShowDepositModal] = useState(false);
+  const [modalDismissed, setModalDismissed] = useState(false);
+
+  useEffect(() => {
+    if (isDepositRequired && !modalDismissed) {
+      setShowDepositModal(true);
+    }
+  }, [isDepositRequired, modalDismissed]);
 
   const [form, setForm] = useState({
     customerName: "",
@@ -72,6 +84,120 @@ export default function CheckoutClient({
     }
   };
 
+  const buildWhatsAppMessage = (orderNum?: string) => {
+    const deliveryLabel = form.deliveryType === "desk" ? "Au bureau (Stop desk)" : "À domicile";
+    const itemsLines = items
+      .map(
+        (it, idx) =>
+          `${idx + 1}. *${it.name}*` +
+          (it.size ? ` (Taille: ${it.size})` : "") +
+          (it.color ? ` (Couleur: ${it.color})` : "") +
+          `\n   • Qté: ${it.quantity} | Prix: ${(it.price * it.quantity).toLocaleString("fr-DZ")} DA`
+      )
+      .join("\n\n");
+
+    const lines = [
+      "✨ *NOUVELLE COMMANDE - MILINA* ✨",
+      orderNum ? `📌 *N° de commande :* ${orderNum}` : null,
+      "",
+      "👤 *COORDONNÉES CLIENT :*",
+      `• *Nom :* ${form.customerName.trim()}`,
+      `• *Téléphone :* ${form.customerPhone.trim()}`,
+      form.customerEmail ? `• *Email :* ${form.customerEmail.trim()}` : null,
+      `• *Wilaya :* ${form.wilaya}`,
+      `• *Commune :* ${form.commune}`,
+      `• *Adresse :* ${form.address.trim()}`,
+      `• *Mode de livraison :* ${deliveryLabel}`,
+      form.notes ? `• *Notes :* ${form.notes.trim()}` : null,
+      "",
+      "🛍️ *ARTICLES COMMANDÉS :*",
+      itemsLines,
+      "",
+      "💳 *RÉCAPITULATIF :*",
+      `• *Sous-total :* ${subtotal.toLocaleString("fr-DZ")} DA`,
+      `• *Livraison :* ${shipping.toLocaleString("fr-DZ")} DA`,
+      `• *TOTAL :* ${total.toLocaleString("fr-DZ")} DA`,
+      "",
+      "⚠️ *ACOMPTE :*",
+      "• Pour toute commande supérieure à 30 000 DA, un acompte de 2 000 DA est désormais demandé afin de garantir le bon traitement des commandes.",
+    ].filter(Boolean);
+
+    return lines.join("\n");
+  };
+
+  const submitViaWhatsApp = async () => {
+    setError(null);
+
+    if (!form.customerName.trim()) {
+      setError("Veuillez renseigner votre nom complet avant de commander via WhatsApp.");
+      return;
+    }
+    if (!form.customerPhone.trim()) {
+      setError("Veuillez renseigner votre numéro de téléphone avant de commander via WhatsApp.");
+      return;
+    }
+    if (!form.commune.trim()) {
+      setError("Veuillez sélectionner votre commune avant de commander via WhatsApp.");
+      return;
+    }
+    if (!form.address.trim()) {
+      setError("Veuillez indiquer votre adresse complète avant de commander via WhatsApp.");
+      return;
+    }
+
+    setSubmitting(true);
+    const cleanPhone = String(whatsappNumber).replace(/[^0-9]/g, "");
+
+    try {
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          ...form,
+          notes: form.notes
+            ? `${form.notes} [Commande passée via WhatsApp - Acompte 2 000 DA]`
+            : "[Commande passée via WhatsApp - Acompte 2 000 DA]",
+          items: items.map((i) => ({
+            productId: i.productId,
+            name: i.name,
+            price: i.price,
+            quantity: i.quantity,
+            size: i.size,
+            color: i.color,
+          })),
+          subtotal,
+          shipping,
+          total,
+          paymentMethod: form.paymentMethod,
+          deliveryType: form.deliveryType,
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      const orderNum = data?.orderNumber;
+
+      const message = buildWhatsAppMessage(orderNum);
+      const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+
+      window.open(waUrl, "_blank");
+
+      clear();
+      if (orderNum) {
+        router.push(`/commander/merci?order=${orderNum}`);
+      } else {
+        router.push("/commander/merci");
+      }
+    } catch {
+      const message = buildWhatsAppMessage();
+      const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+      window.open(waUrl, "_blank");
+      clear();
+      router.push("/commander/merci");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   if (items.length === 0) {
     return (
       <div className="mx-auto max-w-md px-4 py-24 text-center md:px-8">
@@ -91,6 +217,77 @@ export default function CheckoutClient({
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 md:px-8 md:py-12">
+      {/* Alerte Acompte Modal (Commande >= 30 000 DA) */}
+      {showDepositModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative w-full max-w-lg rounded-3xl bg-white p-6 md:p-8 shadow-2xl text-center border border-neutral-100">
+            <button
+              type="button"
+              onClick={() => {
+                setShowDepositModal(false);
+                setModalDismissed(true);
+              }}
+              aria-label="Fermer"
+              className="absolute right-4 top-4 rounded-full p-2 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 transition-smooth"
+            >
+              <IconClose size={20} />
+            </button>
+
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-50 text-amber-600 ring-8 ring-amber-50/50">
+              <svg
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+            </div>
+
+            <h2 className="font-serif text-2xl font-bold text-neutral-900 md:text-3xl">
+              Alerte
+            </h2>
+
+            <p className="mt-4 text-sm md:text-base leading-relaxed text-neutral-700">
+              Nous vous informons que, pour toute commande supérieure à 30 000 DA, un acompte de 2 000 DA est désormais demandé afin de garantir le bon traitement des commandes. Merci de votre compréhension. Pour toute question, contactez-nous sur WhatsApp.
+            </p>
+
+            <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50/80 p-3.5 text-xs font-medium text-amber-900">
+              ⚠️ Acompte obligatoire : <span className="font-bold">2 000 DA</span> pour les commandes ≥ 30 000 DA
+            </div>
+
+            <div className="mt-6 flex flex-col gap-2.5 sm:flex-row">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDepositModal(false);
+                  setModalDismissed(true);
+                }}
+                className="flex-1 rounded-full bg-black px-6 py-3.5 text-sm font-semibold uppercase tracking-wider text-white transition-smooth hover:bg-neutral-800"
+              >
+                J&apos;ai compris, continuer
+              </button>
+
+              <a
+                href={`https://wa.me/${String(whatsappNumber).replace(/[^0-9]/g, "")}?text=${encodeURIComponent("Bonjour, j'ai une question concernant l'acompte de 2 000 DA pour ma commande supérieure à 30 000 DA.")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-[#25D366] bg-[#25D366]/10 px-5 py-3.5 text-sm font-semibold text-[#128C7E] transition-smooth hover:bg-[#25D366] hover:text-white"
+              >
+                <IconWhatsApp size={18} />
+                <span>Contact WhatsApp</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Link
         href="/"
         className="mb-6 inline-flex items-center gap-2 text-sm text-neutral-500 hover:text-black"
@@ -267,14 +464,56 @@ export default function CheckoutClient({
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={submitting}
-            className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-black px-6 py-3.5 text-sm font-semibold uppercase tracking-wider text-white transition-smooth hover:bg-neutral-800 disabled:opacity-60"
-          >
-            {submitting ? "Traitement..." : "Confirmer la commande"}
-            <IconChevronRight size={16} />
-          </button>
+          {isDepositRequired && (
+            <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3.5 text-xs text-amber-950">
+              <div className="flex items-center gap-1.5 font-bold text-amber-900">
+                <span className="inline-block h-2 w-2 rounded-full bg-amber-500 animate-pulse"></span>
+                <span>Acompte de 2 000 DA requis</span>
+              </div>
+              <p className="mt-1 leading-relaxed text-amber-800">
+                Pour toute commande supérieure à 30 000 DA, un acompte de 2 000 DA est désormais demandé afin de garantir le bon traitement des commandes.
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowDepositModal(true)}
+                className="mt-2 text-xs font-semibold underline text-amber-900 hover:text-black cursor-pointer"
+              >
+                Voir l&apos;alerte complète
+              </button>
+            </div>
+          )}
+
+          {isDepositRequired ? (
+            <div className="mt-5 space-y-2.5">
+              <button
+                type="button"
+                onClick={submitViaWhatsApp}
+                disabled={submitting}
+                className="flex w-full items-center justify-center gap-2.5 rounded-full bg-[#25D366] px-6 py-3.5 text-sm font-semibold uppercase tracking-wider text-white shadow-sm transition-smooth hover:bg-[#20ba59] disabled:opacity-60 cursor-pointer"
+              >
+                <IconWhatsApp size={18} />
+                {submitting ? "Traitement..." : "Commander via WhatsApp"}
+              </button>
+
+              <button
+                type="submit"
+                disabled={submitting}
+                className="flex w-full items-center justify-center gap-2 rounded-full border border-neutral-300 bg-white px-6 py-3 text-xs font-semibold uppercase tracking-wider text-neutral-800 transition-smooth hover:bg-neutral-50 disabled:opacity-60 cursor-pointer"
+              >
+                {submitting ? "Traitement..." : "Confirmer sur le site"}
+                <IconChevronRight size={14} />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="submit"
+              disabled={submitting}
+              className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-black px-6 py-3.5 text-sm font-semibold uppercase tracking-wider text-white transition-smooth hover:bg-neutral-800 disabled:opacity-60 cursor-pointer"
+            >
+              {submitting ? "Traitement..." : "Confirmer la commande"}
+              <IconChevronRight size={16} />
+            </button>
+          )}
         </aside>
       </form>
     </div>

@@ -8,15 +8,22 @@ import { WILAYAS } from "@/lib/format";
 
 export default async function CommanderPage() {
   let shippingRates: Record<string, { home: number; desk: number }> = {};
+  let whatsappNumber = "213660989407";
   
   try {
-    const row = await db.select().from(settings).where(eq(settings.key, "shippingRates")).limit(1);
-    if (row.length > 0 && row[0].value) {
-      shippingRates = row[0].value as Record<string, { home: number; desk: number }>;
+    const rows = await db.select().from(settings);
+    const shippingRow = rows.find(r => r.key === "shippingRates");
+    if (shippingRow && shippingRow.value) {
+      shippingRates = shippingRow.value as Record<string, { home: number; desk: number }>;
     } else {
       WILAYAS.forEach(w => {
         shippingRates[w] = { home: 0, desk: 0 };
       });
+    }
+
+    const waRow = rows.find(r => r.key === "whatsapp_number");
+    if (waRow && waRow.value && typeof waRow.value === "string" && waRow.value.trim().length > 0) {
+      whatsappNumber = waRow.value.trim();
     }
   } catch {
     WILAYAS.forEach(w => {
@@ -24,5 +31,5 @@ export default async function CommanderPage() {
     });
   }
 
-  return <CheckoutClient shippingRates={shippingRates} />;
+  return <CheckoutClient shippingRates={shippingRates} whatsappNumber={whatsappNumber} />;
 }
