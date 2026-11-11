@@ -7,6 +7,7 @@ import { useCart } from "@/components/store/CartProvider";
 import { WILAYAS } from "@/lib/format";
 import COMMUNES from "@/lib/communes.json";
 import { IconChevronRight, IconBag, IconCheck, IconArrowLeft, IconWhatsApp, IconClose } from "@/components/store/Icons";
+import { trackInitiateCheckout, trackPurchase } from "@/lib/pixel";
 
 export default function CheckoutClient({
   shippingRates,
@@ -58,6 +59,24 @@ export default function CheckoutClient({
   const total = subtotal + shipping;
   const depositAmount = Math.round(total * 0.5);
 
+  useEffect(() => {
+    if (items.length > 0) {
+      try {
+        trackInitiateCheckout({
+          items: items.map((i) => ({
+            id: i.productId,
+            name: i.name,
+            price: i.price,
+            quantity: i.quantity,
+          })),
+          total,
+          currency: "DZD",
+        });
+      } catch {}
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -88,6 +107,19 @@ export default function CheckoutClient({
         throw new Error(data.error ?? "Erreur lors de la commande");
       }
       clear();
+      try {
+        trackPurchase({
+          orderNumber: data.orderNumber,
+          total,
+          items: items.map((i) => ({
+            id: i.productId,
+            name: i.name,
+            price: i.price,
+            quantity: i.quantity,
+          })),
+          currency: "DZD",
+        });
+      } catch {}
       router.push(`/commander/merci?order=${data.orderNumber}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur inconnue");
@@ -200,6 +232,19 @@ export default function CheckoutClient({
 
       clear();
       if (orderNum) {
+        try {
+          trackPurchase({
+            orderNumber: orderNum,
+            total,
+            items: items.map((i) => ({
+              id: i.productId,
+              name: i.name,
+              price: i.price,
+              quantity: i.quantity,
+            })),
+            currency: "DZD",
+          });
+        } catch {}
         router.push(`/commander/merci?order=${orderNum}`);
       } else {
         router.push("/commander/merci");

@@ -23,11 +23,13 @@ import {
   IconExternal,
   IconMenu,
   IconClose,
+  IconTarget,
 } from "@/components/store/Icons";
 
 const NAV = [
   { href: "/admin", label: "Tableau de bord", icon: IconDashboard },
   { href: "/admin/analytics", label: "Analytics (Vercel)", icon: IconChart },
+  { href: "/admin/pixels", label: "Pixels & Marketing", icon: IconTarget },
   { href: "/admin/hero", label: "Bannière Hero", icon: IconImage },
   { href: "/admin/produits", label: "Produits", icon: IconBox },
   { href: "/admin/categories", label: "Catégories", icon: IconTag },

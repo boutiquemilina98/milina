@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import type { CartItem, ProductDTO } from "@/lib/types";
+import { trackAddToCart, trackAddToWishlist } from "@/lib/pixel";
 
 interface CartContextValue {
   items: CartItem[];
@@ -110,6 +111,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
         if (!opts.silent) {
           setIsOpen(true);
         }
+        try {
+          trackAddToCart({
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            quantity: qty,
+            currency: product.currency,
+          });
+        } catch {}
       },
       removeItem: (productId, size, color) => {
         setItems((prev) =>
@@ -152,6 +162,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
           if (exists) {
             return prev.filter((x) => String(x).trim().toLowerCase() !== s.toLowerCase());
           }
+          try {
+            trackAddToWishlist({ id: s, name: s });
+          } catch {}
           return [...prev, s];
         });
       },

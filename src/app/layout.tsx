@@ -4,6 +4,7 @@ import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { CartProvider } from "@/components/store/CartProvider";
 import { StoreChrome } from "@/components/store/StoreChrome";
+import { PixelScripts } from "@/components/analytics/PixelScripts";
 import { ensureSeedData } from "@/lib/data";
 import { getCachedCategories, getCachedSettings } from "@/lib/cache";
 
@@ -100,6 +101,12 @@ export default async function RootLayout({
         )}
       </head>
       <body className="min-h-screen bg-[var(--store-bg,#ffffff)] text-black antialiased overflow-x-hidden">
+        <PixelScripts
+          facebookPixelId={typeof settings.facebook_pixel_id === "string" ? settings.facebook_pixel_id : null}
+          facebookEnabled={settings.facebook_pixel_enabled === "true" || settings.facebook_pixel_enabled === true}
+          tiktokPixelId={typeof settings.tiktok_pixel_id === "string" ? settings.tiktok_pixel_id : null}
+          tiktokEnabled={settings.tiktok_pixel_enabled === "true" || settings.tiktok_pixel_enabled === true}
+        />
         <CartProvider>
           <StoreChrome categories={categories} settings={settings}>
             {children}

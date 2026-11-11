@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { trackContact } from "@/lib/pixel";
 
 export function ContactForm() {
   const [form, setForm] = useState({
@@ -38,6 +39,9 @@ export function ContactForm() {
       }
 
       setStatus("success");
+      try {
+        trackContact();
+      } catch {}
       setForm({ name: "", email: "", phone: "", message: "" });
     } catch (err: any) {
       setStatus("error");

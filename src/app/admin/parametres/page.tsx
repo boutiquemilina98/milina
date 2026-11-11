@@ -107,6 +107,15 @@ export default function AdminSettingsPage() {
                   Gérer la Bannière Hero →
                 </Link>
               </div>
+              <div className="md:col-span-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-blue-200 bg-blue-50/50 p-4">
+                <div>
+                  <h3 className="font-semibold text-sm text-neutral-900">Pixels & Marketing (Facebook & TikTok)</h3>
+                  <p className="text-xs text-neutral-500 mt-0.5">Gérez vos identifiants Facebook Pixel et TikTok Pixel ainsi que le suivi des événements de conversion e-commerce.</p>
+                </div>
+                <Link href="/admin/pixels" className="admin-btn text-xs shrink-0 bg-black text-white hover:bg-neutral-800">
+                  Configurer les Pixels →
+                </Link>
+              </div>
               <div>
                 <ImageField
                   label="Logo principal"

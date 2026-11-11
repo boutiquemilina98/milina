@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { settings } from "@/db/schema";
 import { getAllSettings } from "@/lib/data";
 import { eq } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +35,10 @@ export async function POST(req: NextRequest) {
           .where(eq(settings.key, key));
       }
     }
+
+    try {
+      revalidateTag("settings", { expire: 0 });
+    } catch {}
 
     try {
       revalidatePath("/");

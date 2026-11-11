@@ -27,7 +27,7 @@ export const getCachedProductBySlug = (slug: string) => {
 export const getCachedSettings = unstable_cache(
   async () => getAllSettings(),
   ["settings"],
-  { revalidate: 3600 }
+  { revalidate: 3600, tags: ["settings"] }
 );
 
 export const getCachedReviews = unstable_cache(

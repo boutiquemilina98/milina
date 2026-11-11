@@ -392,3 +392,11 @@ export const IconSmartphone = (p: IconProps) => (
     <line x1="12" y1="18" x2="12.01" y2="18" />
   </svg>
 );
+
+export const IconTarget = (p: IconProps) => (
+  <svg {...base(p)}>
+    <circle cx="12" cy="12" r="10" />
+    <circle cx="12" cy="12" r="6" />
+    <circle cx="12" cy="12" r="2" />
+  </svg>
+);

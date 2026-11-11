@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { ProductDTO } from "@/lib/types";
 import { useCart } from "./CartProvider";
+import { trackViewContent } from "@/lib/pixel";
 import {
   IconChevronLeft,
   IconChevronRight,
@@ -25,6 +26,16 @@ export function ProductDetail({ product, categoryName }: Props) {
   const [size, setSize] = useState<string | undefined>(product.sizes?.[0]);
   const [color, setColor] = useState<string | undefined>(product.colors?.[0]);
   const fav = isFavorite(product.slug) || isFavorite(String(product.id));
+
+  useEffect(() => {
+    trackViewContent({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      category: categoryName,
+      currency: product.currency,
+    });
+  }, [product.id, product.name, product.price, categoryName, product.currency]);
 
   const validImages = (product.images || []).filter(
     (img) => img && typeof img.url === "string" && img.url.trim().length > 0
