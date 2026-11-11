@@ -5,6 +5,7 @@ import type { ProductDTO } from "@/lib/types";
 import { useCart } from "./CartProvider";
 import { IconClose, IconMinus, IconPlus } from "./Icons";
 import { ShoppingCart } from "lucide-react";
+import { getColorSwatch } from "@/lib/colors";
 
 interface Props {
   product: ProductDTO;
@@ -97,35 +98,36 @@ export function QuickAddSheet({ product, open, onClose }: Props) {
         {product.colors.length > 0 && (
           <div className="mt-6">
             <p className="text-center text-xs font-semibold uppercase tracking-[0.15em] text-neutral-500">
-              Couleur: {selectedColor}
+              Couleur : <span className="font-bold text-neutral-900 capitalize">{selectedColor}</span>
             </p>
-            <div className="mt-3 flex items-center justify-center gap-3">
-              {product.colors.map((color) => (
-                <button
-                  key={color}
-                  type="button"
-                  onClick={() => setSelectedColor(color)}
-                  className="flex flex-col items-center gap-1.5"
-                >
-                  <span
-                    className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all ${
-                      selectedColor === color
-                        ? "border-black shadow-md shadow-neutral-200"
-                        : "border-neutral-200"
+            <div className="mt-3 flex items-center justify-center gap-2.5 flex-wrap">
+              {product.colors.map((color) => {
+                const swatch = getColorSwatch(color, product.images);
+                const isSelected = selectedColor === color;
+                return (
+                  <button
+                    key={color}
+                    type="button"
+                    title={color}
+                    aria-label={`Couleur ${color}`}
+                    onClick={() => setSelectedColor(color)}
+                    className={`relative flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-[4px] border transition-all duration-150 hover:scale-105 active:scale-95 ${
+                      isSelected
+                        ? "border-black/40 ring-2 ring-neutral-900 ring-offset-2 ring-offset-white scale-105 shadow-sm"
+                        : "border-black/15 hover:border-black/35 shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
                     }`}
+                    style={{
+                      background: swatch.background,
+                    }}
                   >
-                    <span
-                      className="h-7 w-7 rounded-full"
-                      style={{
-                        background: getColorValue(color),
-                      }}
-                    />
-                  </span>
-                  <span className="text-[10px] font-medium text-neutral-600">
-                    {color}
-                  </span>
-                </button>
-              ))}
+                    {swatch.isFallback && (
+                      <span className="text-[10px] font-bold text-neutral-700 uppercase tracking-tighter truncate px-0.5">
+                        {color.slice(0, 3)}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
@@ -191,29 +193,4 @@ export function QuickAddSheet({ product, open, onClose }: Props) {
       </div>
     </>
   );
-}
-
-/** Maps French color names to CSS color values */
-function getColorValue(name: string): string {
-  const map: Record<string, string> = {
-    noir: "#1a1a1a",
-    blanc: "#f5f5f5",
-    beige: "#d4b896",
-    crème: "#f5f0e1",
-    "crème ": "#f5f0e1",
-    ivoire: "#fffff0",
-    doré: "linear-gradient(135deg, #d4a556, #f5d89a)",
-    marron: "#6b3a2a",
-    gris: "#9ca3af",
-    "gris perle": "#c4c4c4",
-    bleu: "linear-gradient(135deg, #a8c8f0, #f0c0d0)",
-    rouge: "#c0392b",
-    rose: "#f5a0b0",
-    vert: "#4a7c59",
-    multicolore:
-      "conic-gradient(#ef4444, #f59e0b, #22c55e, #3b82f6, #a855f7, #ef4444)",
-    "noir & blanc":
-      "linear-gradient(135deg, #1a1a1a 50%, #f5f5f5 50%)",
-  };
-  return map[name.toLowerCase()] ?? "#d4d4d4";
 }

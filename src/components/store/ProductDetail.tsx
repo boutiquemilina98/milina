@@ -12,6 +12,7 @@ import {
   IconBag,
   IconCheck,
 } from "./Icons";
+import { getColorSwatch } from "@/lib/colors";
 
 interface Props {
   product: ProductDTO;
@@ -258,25 +259,37 @@ export function ProductDetail({ product, categoryName }: Props) {
           {/* Colors — clicking switches the image */}
           {(product.colors || []).length > 0 && (
             <div className="mt-6">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-neutral-600">
-                Couleur : <span>{color}</span>
+              <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-neutral-600">
+                Couleur : <span className="font-bold text-neutral-900 capitalize">{color}</span>
               </p>
-              <div className="flex flex-wrap gap-2">
-                {(product.colors || []).map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => handleColorChange(c)}
-                    className="rounded-md border px-4 py-2 text-sm transition-smooth hover:opacity-80"
-                    style={{
-                      backgroundColor: color === c ? 'var(--product-variant-btn, #000000)' : 'transparent',
-                      borderColor: color === c ? 'var(--product-variant-btn, #000000)' : 'rgba(0,0,0,0.1)',
-                      color: color === c ? '#ffffff' : 'inherit'
-                    }}
-                  >
-                    {c}
-                  </button>
-                ))}
+              <div className="flex flex-wrap items-center gap-2.5">
+                {(product.colors || []).map((c) => {
+                  const swatch = getColorSwatch(c, validImages);
+                  const isSelected = color === c;
+                  return (
+                    <button
+                      key={c}
+                      type="button"
+                      title={c}
+                      aria-label={`Couleur ${c}`}
+                      onClick={() => handleColorChange(c)}
+                      className={`relative flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-[4px] border transition-all duration-150 hover:scale-105 active:scale-95 ${
+                        isSelected
+                          ? "border-black/40 ring-2 ring-neutral-900 ring-offset-2 ring-offset-white scale-105 shadow-sm"
+                          : "border-black/15 hover:border-black/35 shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
+                      }`}
+                      style={{
+                        background: swatch.background,
+                      }}
+                    >
+                      {swatch.isFallback && (
+                        <span className="text-[10px] font-bold text-neutral-700 uppercase tracking-tighter truncate px-0.5">
+                          {c.slice(0, 3)}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
